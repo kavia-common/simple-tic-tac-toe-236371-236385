@@ -7,10 +7,34 @@ const swaggerSpec = require('../swagger');
 // Initialize express app
 const app = express();
 
+const defaultAllowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  // Some setups run CRA on 3002 if 3000 is occupied.
+  'http://localhost:3002',
+  'http://127.0.0.1:3002',
+];
+
+// Allow override via env var (comma-separated), e.g.
+// CORS_ORIGINS=http://localhost:3000,https://myapp.example.com
+const envAllowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const allowedOrigins = envAllowedOrigins.length > 0 ? envAllowedOrigins : defaultAllowedOrigins;
+
 app.use(cors({
-  origin: '*',
+  origin(origin, callback) {
+    // Allow non-browser requests (no Origin header) like curl, server-to-server, etc.
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.set('trust proxy', true);
 app.use('/docs', swaggerUi.serve, (req, res, next) => {

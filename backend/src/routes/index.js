@@ -32,6 +32,8 @@ const router = express.Router();
  *                   example: development
  */
 router.get('/', healthController.check.bind(healthController));
+// Alias for frontend health checks and common conventions.
+router.get('/health', healthController.check.bind(healthController));
 
 /**
  * @swagger
